@@ -2,6 +2,8 @@ import React, { Component } from 'react'
 import NewsItem from './NewsItem'
 import Spinner from './Spinner'
 import PropTypes from 'prop-types'
+import InfiniteScroll from "react-infinite-scroll-component";
+
 
 export class News extends Component {
   static defaultProps = {
@@ -26,17 +28,18 @@ export class News extends Component {
     super(props)
     this.state = {
       articles: [], //this.articles,
-      loading: false,
+      loading: true,
       error: null,
       page: 1,
-      totalResults: 1,
-      totalPages: 1
+      totalResults: 0,
+      totalPages: 0
     }
     document.title = `${this.capitalizeWord(this.props.category)} - News App`
     // this.handleNextButton = this.handleNextButton.bind(this);
     // this.handlePreviousButton = this.handlePreviousButton.bind(this);
   }
   async componentDidMount() {
+    console.log("shariq 1")
     this.fetchData(1)
   }
 
@@ -52,19 +55,27 @@ export class News extends Component {
   // }
 
   fetchData = async (pageNo) => {
-    if (this.state.page <= this.state.totalPages) {
-      this.setState({ loading: true })
-      let data = await fetch(`https://newsapi.org/v2/top-headlines?apiKey=${this.props.apiKey}&language=${this.props.language}&country=${this.props.country}&category=${this.props.category}&pageSize=${this.props.pageSize}&page=${pageNo}`)
-      let parsedData = await data.json()
-      let stateData = {
-        loading: false,
-        articles: parsedData.articles,
-        page: pageNo,
-        totalResults: parsedData.totalResults,
-        totalPages: Math.ceil(parsedData.totalResults / this.props.pageSize)
-      }
-      this.setState(stateData)
+    // if (pageNo <= this.state.totalPages) {
+    // this.setState({ loading: true })
+    this.props.setProgress(0)
+    let data = await fetch(`https://newsapi.org/v2/top-headlines?apiKey=${this.props.apiKey}&language=${this.props.language}&country=${this.props.country}&category=${this.props.category}&pageSize=${this.props.pageSize}&page=${pageNo}`)
+    this.props.setProgress(30)
+    let parsedData = await data.json()
+    this.props.setProgress(70)
+    let stateData = {
+      loading: false,
+      articles: pageNo > 1 ? this.state.articles.concat(parsedData.articles) : parsedData.articles,
+      page: pageNo,
+      totalResults: parsedData.totalResults,
+      totalPages: Math.ceil(parsedData.totalResults / this.props.pageSize)
     }
+    this.setState(stateData)
+    this.props.setProgress(100)
+    // }
+  }
+
+  fetchMoreData = async () => {
+    this.fetchData(this.state.page + 1)
   }
 
   handleNextButton = async () => {
@@ -76,22 +87,21 @@ export class News extends Component {
   }
 
   render() {
-    const { loading, page, totalPages } = this.state;
-    const pageNumbers = [];
-    for (let i = 1; i <= this.state.totalPages; i++) {
-      pageNumbers.push(i);
-    }
+    const { loading } = this.state;
+    // const pageNumbers = [];
+    // for (let i = 1; i <= this.state.totalPages; i++) {
+    //   pageNumbers.push(i);
+    // }
     return (
       <div className='container'>
         <h1 style={{ textAlign: 'center', margin: '35px 0px' }}>News APP- Top Headlines on {this.capitalizeWord(this.props.category)} Category</h1>
-        {
-          loading &&
-          <div style={{ textAlign: 'center' }}>
-            <Spinner />
-          </div>
-        }
-        {
-          !loading &&
+        {loading && <Spinner />}
+        <InfiniteScroll
+          dataLength={this.state.articles.length}
+          next={this.fetchMoreData}
+          hasMore={this.state.articles.length < this.state.totalResults}
+          loader={<Spinner />}
+        >
           <div className="row">
             {
               this.state.articles?.map((element, index) => {
@@ -101,12 +111,15 @@ export class News extends Component {
               })
             }
           </div>
-        }
+        </InfiniteScroll>
+
+
         {/* <div className="container d-flex justify-content-between mb-2">
           <button type="button" disabled={page <= 1} className="btn btn-dark" onClick={this.handlePreviousButton}>&larr; Previous</button>
           <button type="button" disabled={page === totalPages} className="btn btn-dark" onClick={this.handleNextButton}>Next &rarr;</button>
         </div> */}
-        <div className="container mt-5">
+
+        {/* <div className="container mt-5">
           <nav aria-label="Page navigation exampl" className='d-flex align-items-center justify-content-center'>
             <ul className="pagination">
               <li className="page-item" disabled={page <= 1}><a disabled={page <= 1} className="page-link" href="javascript:void(0)" onClick={page <= 1 ? (e) => e.preventDefault() : this.handlePreviousButton}>Previous</a></li>
@@ -123,14 +136,15 @@ export class News extends Component {
                     {pageNo}
                   </a>
                 </li>
-              ))}
-              {/* <li className="page-item"><a className="page-link" href="javascript:void(0)">1</a></li>
+              ))} */}
+        {/* <li className="page-item"><a className="page-link" href="javascript:void(0)">1</a></li>
               <li className="page-item"><a className="page-link" href="javascript:void(0)">2</a></li>
               <li className="page-item"><a className="page-link" href="javascript:void(0)">3</a></li> */}
-              <li className="page-item" disabled={page === totalPages}><a disabled={page === totalPages} className="page-link" href="javascript:void(0)" onClick={page === totalPages ? (e) => e.preventDefault() : this.handleNextButton}>Next</a></li>
+        {/* <li className="page-item" disabled={page === totalPages}><a disabled={page === totalPages} className="page-link" href="javascript:void(0)" onClick={page === totalPages ? (e) => e.preventDefault() : this.handleNextButton}>Next</a></li>
             </ul>
           </nav>
-        </div>
+        </div> */}
+
       </div>
     )
   }
