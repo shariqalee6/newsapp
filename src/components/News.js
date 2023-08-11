@@ -1,47 +1,21 @@
-import React, { Component } from 'react'
+import React, { useEffect, useState } from 'react'
 import NewsItem from './NewsItem'
 import Spinner from './Spinner'
 import PropTypes from 'prop-types'
 import InfiniteScroll from "react-infinite-scroll-component";
 
 
-export class News extends Component {
-  static defaultProps = {
-    country: 'us',
-    language: 'en',
-    category: 'general',
-    pageSize: 10
-  }
+const News = (props) => {
+  const [articles, setArticles] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [totalResults, setTotalResults] = useState(0)
+  // const [totalPages, setTotalPages] = useState(0)
 
-  static propTypes = {
-    country: PropTypes.string,
-    language: PropTypes.string,
-    category: PropTypes.string,
-    pageSize: PropTypes.number
-  }
-
-  capitalizeWord = (string) => {
-    return string.charAt(0).toUpperCase() + string.slice(1)
-  }
-
-  constructor(props) {
-    super(props)
-    this.state = {
-      articles: [], //this.articles,
-      loading: true,
-      error: null,
-      page: 1,
-      totalResults: 0,
-      totalPages: 0
-    }
-    document.title = `${this.capitalizeWord(this.props.category)} - News App`
-    // this.handleNextButton = this.handleNextButton.bind(this);
-    // this.handlePreviousButton = this.handlePreviousButton.bind(this);
-  }
-  async componentDidMount() {
-    console.log("shariq 1")
-    this.fetchData(1)
-  }
+  // async componentDidMount() {
+  //   console.log("shariq 1")
+  //   this.fetchData(1)
+  // }
 
   // componentDidUpdate(prevProps) {
   //   if (
@@ -54,72 +28,76 @@ export class News extends Component {
   //   }
   // }
 
-  fetchData = async (pageNo) => {
-    // if (pageNo <= this.state.totalPages) {
-    // this.setState({ loading: true })
-    this.props.setProgress(0)
-    let data = await fetch(`https://newsapi.org/v2/top-headlines?apiKey=${this.props.apiKey}&language=${this.props.language}&country=${this.props.country}&category=${this.props.category}&pageSize=${this.props.pageSize}&page=${pageNo}`)
-    this.props.setProgress(30)
+  useEffect(() => {
+    document.title = `${capitalizeWord(props.category)} - News App`
+    fetchData(1)
+    // eslint-disable-next-line 
+  }, [])
+
+  const fetchData = async (pageNo) => {
+    props.setProgress(0)
+    let data = await fetch(`https://newsapi.org/v2/top-headlines?apiKey=${props.apiKey}&language=${props.language}&country=${props.country}&category=${props.category}&pageSize=${props.pageSize}&page=${pageNo}`)
+    props.setProgress(30)
     let parsedData = await data.json()
-    this.props.setProgress(70)
-    let stateData = {
-      loading: false,
-      articles: pageNo > 1 ? this.state.articles.concat(parsedData.articles) : parsedData.articles,
-      page: pageNo,
-      totalResults: parsedData.totalResults,
-      totalPages: Math.ceil(parsedData.totalResults / this.props.pageSize)
-    }
-    this.setState(stateData)
-    this.props.setProgress(100)
-    // }
+    props.setProgress(70)
+    setArticles(pageNo > 1 ? articles.concat(parsedData.articles) : parsedData.articles)
+    setLoading(false)
+    setPage(pageNo)
+    setTotalResults(parsedData.totalResults)
+    // setTotalPages(Math.ceil(parsedData.totalResults / props.pageSize))
+    props.setProgress(100)
   }
 
-  fetchMoreData = async () => {
-    this.fetchData(this.state.page + 1)
+  const fetchMoreData = async () => {
+    fetchData(page + 1)
   }
 
-  handleNextButton = async () => {
-    this.fetchData(this.state.page + 1)
+  // const handleNextButton = async () => {
+  //   fetchData(page + 1)
+  // }
+
+  // const handlePreviousButton = async () => {
+  //   fetchData(page - 1)
+  // }
+
+  const capitalizeWord = (string) => {
+    return string.charAt(0).toUpperCase() + string.slice(1)
   }
 
-  handlePreviousButton = async () => {
-    this.fetchData(this.state.page - 1)
-  }
 
-  render() {
-    const { loading } = this.state;
-    // const pageNumbers = [];
-    // for (let i = 1; i <= this.state.totalPages; i++) {
-    //   pageNumbers.push(i);
-    // }
-    return (
-      <div className='container'>
-        <h1 style={{ textAlign: 'center', margin: '35px 0px' }}>News APP- Top Headlines on {this.capitalizeWord(this.props.category)} Category</h1>
-        {loading && <Spinner />}
-        <InfiniteScroll
-          dataLength={this.state.articles.length}
-          next={this.fetchMoreData}
-          hasMore={this.state.articles.length < this.state.totalResults}
-          loader={<Spinner />}
-        >
-          <div className="row">
-            {
-              this.state.articles?.map((element, index) => {
-                // Your code logic here
-                return <NewsItem key={element.url} title={element.title} description={element.description} imageUrl={element.urlToImage}
-                  newsUrl={element.author} author={element.author} date={element.publishedAt} source={element.source.name} />
-              })
-            }
-          </div>
-        </InfiniteScroll>
+  // const { loading } = this.state;
+  // const pageNumbers = [];
+  // for (let i = 1; i <= this.state.totalPages; i++) {
+  //   pageNumbers.push(i);
+  // }
+  return (
+    <div className='container'>
+      <h1 style={{ textAlign: 'center', margin: '35px 0px', marginTop: '90px' }}>News APP- Top Headlines on {capitalizeWord(props.category)} Category</h1>
+      {loading && <Spinner />}
+      <InfiniteScroll
+        dataLength={articles.length}
+        next={fetchMoreData}
+        hasMore={articles.length < totalResults}
+        loader={<Spinner />}
+      >
+        <div className="row">
+          {
+            articles?.map((element, index) => {
+              // Your code logic here
+              return <NewsItem key={element.url} title={element.title} description={element.description} imageUrl={element.urlToImage}
+                newsUrl={element.author} author={element.author} date={element.publishedAt} source={element.source.name} />
+            })
+          }
+        </div>
+      </InfiniteScroll>
 
 
-        {/* <div className="container d-flex justify-content-between mb-2">
+      {/* <div className="container d-flex justify-content-between mb-2">
           <button type="button" disabled={page <= 1} className="btn btn-dark" onClick={this.handlePreviousButton}>&larr; Previous</button>
           <button type="button" disabled={page === totalPages} className="btn btn-dark" onClick={this.handleNextButton}>Next &rarr;</button>
         </div> */}
 
-        {/* <div className="container mt-5">
+      {/* <div className="container mt-5">
           <nav aria-label="Page navigation exampl" className='d-flex align-items-center justify-content-center'>
             <ul className="pagination">
               <li className="page-item" disabled={page <= 1}><a disabled={page <= 1} className="page-link" href="javascript:void(0)" onClick={page <= 1 ? (e) => e.preventDefault() : this.handlePreviousButton}>Previous</a></li>
@@ -137,17 +115,28 @@ export class News extends Component {
                   </a>
                 </li>
               ))} */}
-        {/* <li className="page-item"><a className="page-link" href="javascript:void(0)">1</a></li>
+      {/* <li className="page-item"><a className="page-link" href="javascript:void(0)">1</a></li>
               <li className="page-item"><a className="page-link" href="javascript:void(0)">2</a></li>
               <li className="page-item"><a className="page-link" href="javascript:void(0)">3</a></li> */}
-        {/* <li className="page-item" disabled={page === totalPages}><a disabled={page === totalPages} className="page-link" href="javascript:void(0)" onClick={page === totalPages ? (e) => e.preventDefault() : this.handleNextButton}>Next</a></li>
+      {/* <li className="page-item" disabled={page === totalPages}><a disabled={page === totalPages} className="page-link" href="javascript:void(0)" onClick={page === totalPages ? (e) => e.preventDefault() : this.handleNextButton}>Next</a></li>
             </ul>
           </nav>
         </div> */}
 
-      </div>
-    )
-  }
+    </div>
+  )
+}
+News.defaultProps = {
+  country: 'us',
+  language: 'en',
+  category: 'general',
+  pageSize: 10
 }
 
+News.propTypes = {
+  country: PropTypes.string,
+  language: PropTypes.string,
+  category: PropTypes.string,
+  pageSize: PropTypes.number
+}
 export default News
