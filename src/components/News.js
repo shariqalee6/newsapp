@@ -85,7 +85,7 @@ const News = (props) => {
             articles?.map((element, index) => {
               // Your code logic here
               return <NewsItem key={element.url} title={element.title} description={element.description} imageUrl={element.urlToImage}
-                newsUrl={element.author} author={element.author} date={element.publishedAt} source={element.source.name} />
+                newsUrl={element.url} author={element.author} date={element.publishedAt} source={element.source.name} />
             })
           }
         </div>
